@@ -1,0 +1,385 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+@layer base {
+  *, *::before, *::after {
+    transition-property: background-color, color, border-color;
+    transition-duration: 420ms;
+    transition-timing-function: var(--ease-gentle);
+  }
+  html {
+    color-scheme: light;
+    background: var(--color-background);
+    scroll-padding-top: 6.5rem;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    min-height: 100svh;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    overflow-wrap: break-word;
+  }
+  h1 { font-size: var(--text-display); }
+  h2 { font-size: var(--text-heading); }
+  h3 { font-size: var(--text-subheading); }
+  p { text-wrap: pretty; }
+  button, a { -webkit-tap-highlight-color: transparent; }
+  button:not(:disabled) { cursor: pointer; }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+  }
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-foreground);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility surface-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+@layer components {
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-accent);
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.6;
+    letter-spacing: 0.14em;
+  }
+  .demo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--color-accent) 14%, transparent);
+    border-radius: 999px;
+    background: var(--color-accent-soft);
+    padding: 0.25rem 0.6rem;
+    color: var(--color-accent);
+    font-size: 0.625rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .skip-link {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 100;
+    clip-path: inset(50%);
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+    border-radius: var(--radius-control);
+    background: var(--color-accent);
+    padding: 0.75rem 1rem;
+    color: var(--color-on-accent);
+    font-size: 0.875rem;
+  }
+  .skip-link:focus { clip-path: none; width: auto; height: auto; overflow: visible; white-space: normal; }
+  .hero-section {
+    background: radial-gradient(ellipse at 84% 35%, var(--hero-wash) 0%, transparent 48%);
+  }
+  .architecture-scene { padding: 2rem 0; isolation: isolate; }
+  .architecture-decor {
+    position: absolute;
+    inset: -3.5rem;
+    overflow: clip;
+    pointer-events: none;
+    border-radius: 3rem;
+  }
+  .architecture-ambient {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 25% 35%, rgb(var(--ambient-teal)), transparent 58%), radial-gradient(ellipse at 80% 65%, rgb(var(--ambient-mint)), transparent 55%), radial-gradient(ellipse at 50% 80%, rgb(var(--ambient-cream)), transparent 60%);
+    mask-image: radial-gradient(ellipse closest-side, #000 40%, transparent 100%);
+    animation: architecture-breathe 18s ease-in-out infinite alternate;
+  }
+  .architecture-orbit {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 90%;
+    aspect-ratio: 1;
+    border: 1px solid rgb(var(--orbit-stroke));
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    animation: architecture-turn 32s linear infinite;
+  }
+  .architecture-orbit::before {
+    content: "";
+    position: absolute;
+    top: 6.7%;
+    left: 25%;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgb(var(--orbit-marker));
+    transform: translate(-50%, -50%);
+  }
+  .architecture-orbit::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border: 2px solid transparent;
+    border-top-color: rgb(var(--orbit-arc));
+    border-radius: 50%;
+    transform: rotate(28deg);
+  }
+  .orbit-one { border-style: dashed; border-color: rgb(var(--orbit-one)); }
+  .orbit-two { width: 104%; border-style: dotted; border-color: rgb(var(--orbit-two)); animation-duration: 48s; animation-direction: reverse; }
+  .orbit-three { width: 118%; border-style: dashed; border-color: rgb(var(--orbit-three)); animation-duration: 54s; }
+  .architecture-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgb(var(--particle-color));
+    animation: architecture-drift 16s ease-in-out infinite alternate;
+  }
+  .particle-one { top: 16%; left: 5%; }
+  .particle-two { top: 30%; right: 3%; animation-duration: 21s; animation-delay: -7s; }
+  .particle-three { bottom: 8%; left: 7%; animation-duration: 24s; animation-delay: -12s; }
+  .particle-four { bottom: 5%; right: 13%; animation-duration: 19s; animation-delay: -5s; }
+  @media (max-width: 639px) {
+    .architecture-decor { inset: -1.5rem; opacity: 0.8; }
+    .orbit-three, .particle-three, .particle-four { display: none; }
+    .architecture-orbit { animation-duration: 50s; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .architecture-decor > * { animation: none !important; }
+  }
+  .architecture-connector {
+    display: flex;
+    height: 2.25rem;
+    justify-content: center;
+    align-items: center;
+    color: var(--color-accent);
+  }
+  .capability-card { transition: background-color 200ms, color 200ms, border-color 200ms, box-shadow 200ms, transform 200ms; }
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .capability-card:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--color-accent) 35%, transparent); box-shadow: var(--shadow-floating); }
+  }
+  @media (max-height: 760px) {
+    .workspace-welcome { padding-top: 0; }
+    .workspace-welcome h1 { font-size: 2.5rem; }
+  }
+}
+
+@keyframes architecture-turn {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@keyframes architecture-breathe {
+  from { transform: translate(-3%, 1%) scale(0.96); opacity: 0.7; }
+  to { transform: translate(3%, -3%) scale(1.06); opacity: 1; }
+}
+@keyframes architecture-drift {
+  from { transform: translate(0, 0); opacity: 0.45; }
+  to { transform: translate(10px, -16px); opacity: 0.85; }
+}
+
+/* Homepage-only ambient effects; no content or layout dimensions animate. */
+/* Typed colors let gradients interpolate during theme changes without extra layers. */
+@property --cta-start {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #21665c;
+}
+@property --cta-middle {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #21665c;
+}
+@property --cta-end {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #21665c;
+}
+@property --spotlight-center {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgb(186 241 220 / 0.24);
+}
+@property --spotlight-edge {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgb(133 215 194 / 0.09);
+}
+@property --spotlight-static {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgb(186 241 220 / 0.16);
+}
+@property --mouse-x {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+@property --mouse-y {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+@layer components {
+  .preview-scene {
+    position: relative;
+    isolation: isolate;
+  }
+  .preview-decor {
+    position: absolute;
+    inset: -2rem;
+    z-index: -1;
+    overflow: clip;
+    pointer-events: none;
+    border-radius: 3rem;
+    mask-image: linear-gradient(0deg, transparent, #000 12%, #000 88%, transparent);
+  }
+  .preview-decor .architecture-ambient {
+    /* Edge-weighted glow: a central glow would be hidden by the white card. */
+    border-radius: 2rem;
+    background: radial-gradient(ellipse 22% 65% at 7% 50%, rgb(var(--preview-glow-left)), transparent 100%), radial-gradient(ellipse 22% 65% at 93% 50%, rgb(var(--preview-glow-right)), transparent 100%), radial-gradient(ellipse 60% 24% at 50% 88%, rgb(var(--preview-glow-bottom)), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+    animation-duration: 14s;
+    animation-direction: alternate-reverse;
+  }
+  .preview-card {
+    position: relative;
+    z-index: 0;
+    box-shadow: var(--preview-shadow);
+    animation: preview-float 9s ease-in-out infinite alternate;
+  }
+  .preview-example-row { position: relative; overflow: hidden; isolation: isolate; }
+  .preview-row-highlight {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent 15%, rgb(var(--row-highlight)) 50%, transparent 85%);
+    transform: translateX(-110%);
+    animation: preview-highlight 14s ease-in-out infinite;
+  }
+  .preview-example-row:nth-child(2) .preview-row-highlight { animation-delay: -4s; }
+  .preview-example-row:nth-child(3) .preview-row-highlight { animation-delay: -8s; }
+  .cta-spotlight-card {
+    isolation: isolate;
+    background-image: linear-gradient(125deg, var(--cta-start), var(--cta-middle) 52%, var(--cta-end));
+    transition: --mouse-x 160ms ease-out, --mouse-y 160ms ease-out, --cta-start 420ms var(--ease-gentle), --cta-middle 420ms var(--ease-gentle), --cta-end 420ms var(--ease-gentle), background-color 420ms var(--ease-gentle), color 420ms var(--ease-gentle), border-color 420ms var(--ease-gentle);
+  }
+  .cta-spotlight {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    opacity: 0;
+    background: radial-gradient(ellipse 360px 260px at var(--mouse-x) var(--mouse-y), var(--spotlight-center), var(--spotlight-edge) 45%, transparent 75%);
+    transition: opacity 350ms ease-out, --spotlight-center 420ms var(--ease-gentle), --spotlight-edge 420ms var(--ease-gentle), --spotlight-static 420ms var(--ease-gentle);
+  }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .cta-spotlight-card[data-spotlight-active="true"] .cta-spotlight { opacity: 1; }
+  }
+  @media (hover: none), (pointer: coarse) {
+    .cta-spotlight { opacity: 0.5; background: radial-gradient(ellipse at 65% 35%, var(--spotlight-center), transparent 70%); }
+  }
+  @media (max-width: 639px) {
+    .preview-decor { inset: -1rem; opacity: 0.7; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .preview-decor .architecture-ambient, .preview-card, .preview-row-highlight { animation: none !important; }
+    .architecture-orbit::before, .architecture-orbit::after { animation: none !important; }
+    .cta-spotlight-card { transition: none; }
+    .cta-spotlight { opacity: 0.35; transition: none; background: radial-gradient(ellipse at 50% 50%, var(--spotlight-static), transparent 70%); }
+  }
+}
+@keyframes preview-float {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2.5px); }
+}
+@keyframes preview-highlight {
+  0%, 15% { transform: translateX(-110%); opacity: 0; }
+  35% { opacity: 1; }
+  70%, 100% { transform: translateX(110%); opacity: 0; }
+}
+
+@layer components {
+  .process-step {
+    position: relative;
+    isolation: isolate;
+    height: 100%;
+    border-radius: var(--radius-card);
+    cursor: default;
+    transition: transform 240ms var(--ease-gentle), background-color 420ms, color 420ms, border-color 420ms;
+  }
+  .process-step::before {
+    content: "";
+    position: absolute;
+    inset: -0.75rem;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    background: color-mix(in srgb, var(--color-accent-soft) 45%, transparent);
+    box-shadow: 0 10px 28px -14px rgb(var(--process-shadow));
+    transition: opacity 240ms var(--ease-gentle);
+  }
+  .process-step-number { background-color: color-mix(in srgb, var(--color-accent-soft) 40%, transparent); border-color: color-mix(in srgb, var(--color-accent) 20%, transparent); transition: transform 240ms var(--ease-gentle), background-color 240ms, border-color 240ms; }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .process-step-hover:hover .process-step { transform: translateY(-4px); }
+    .process-step-hover:hover .process-step::before { opacity: 1; }
+    .process-step-hover:hover .process-step-number {
+      transform: scale(1.06);
+      background: var(--color-accent-soft);
+      border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+    }
+  }
+}
+
+/* Only user-initiated switches animate; initial preference restoration is immediate. */
+@media (prefers-reduced-motion: no-preference) {
+  /* The CTA already times its theme colors at 420ms. Keep its cursor movement at 160ms. */
+  html[data-theme-transition] *:not(.cta-spotlight-card), html[data-theme-transition] *::before, html[data-theme-transition] *::after {
+    transition-duration: 420ms !important;
+  }
+}
+@layer components {
+  .theme-toggle:hover { border-color: var(--color-accent); }
+  .theme-icon {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    transition: transform 420ms var(--ease-gentle), opacity 420ms var(--ease-gentle);
+  }
+  .theme-sun { opacity: 1; transform: rotate(0) scale(1); }
+  .theme-moon { opacity: 0; transform: rotate(-70deg) scale(0.6); }
+  [data-theme="dark"] .theme-sun { opacity: 0; transform: rotate(70deg) scale(0.6); }
+  [data-theme="dark"] .theme-moon { opacity: 1; transform: rotate(0) scale(1); }
+}
