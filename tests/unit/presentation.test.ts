@@ -23,7 +23,7 @@ class MemoryStorage implements StorageLike {
 test("risks render as four distinct headings and numbered lists without redundant prefixes", () => {
   const blueprint = { ...result.blueprint, risks: ["Risk: Risk: Outdated content: verify its freshness."], assumptions: ["Assumption: An agent reviews replies."] };
   const markup = render("risks", blueprint);
-  for (const title of ["Risks", "Assumptions", "Missing Information", "Limitations"]) assert.ok(markup.includes(`>${title}</h3>`));
+  for (const title of ["Risks", "Assumptions", "Missing Information", "Limitations"]) assert.ok(markup.includes(`>${title}</h4>`));
   assert.equal((markup.match(/<ol /g) ?? []).length, 4);
   assert.doesNotMatch(markup, /Risk:|Assumption:/);
   assert.match(markup, /Outdated content: verify its freshness\./);
@@ -42,10 +42,10 @@ test("KPI table preserves baselines/targets, labels sources and uses honest lega
 });
 test("technology and roadmap use structured values, and absent legacy activities are not invented", () => {
   const stack = render("technology");
-  assert.match(stack, /Next\.js/); assert.match(stack, />Purpose<\/dt>/); assert.match(stack, />Justification<\/dt>/);
+  assert.match(stack, /Next\.js/); assert.match(stack, />Purpose<\/dt>/); assert.match(stack, />Justification<\/span>/);
   const roadmap = render("roadmap");
-  for (const title of ["Activities", "Deliverables", "Exit criteria"]) assert.ok(roadmap.includes(`>${title}</h4>`));
-  assert.doesNotMatch(render("roadmap", result.blueprint), />Activities<\/h4>/);
+  for (const title of ["Activities", "Deliverables", "Exit criteria"]) assert.ok(roadmap.includes(`>${title}</h5>`));
+  assert.doesNotMatch(render("roadmap", result.blueprint), />Activities<\/h5>/);
 });
 test("provider usage preserves reported zeros and totals; absent/invalid values are null, never estimated", () => {
   assert.deepEqual(groqTokenUsage({ prompt_tokens: 0, completion_tokens: 18 }), { inputTokens: 0, outputTokens: 18, totalTokens: null });
@@ -121,4 +121,63 @@ test("explicit user KPI targets survive changed AI targets across business conte
     assert.match(markup, /AI recommendation/); assert.match(markup, /Not provided/);
   }
   assert.equal(blueprintResultSchema.safeParse(result).success, true);
+});
+
+test("Studio introduction and architecture preserve supplied prose without invented overview values or flow nodes", () => {
+  const summary = render("summary");
+  assert.ok(summary.includes(generatedResult.blueprint.executiveSummary));
+  assert.match(summary, /Business Challenge/); assert.match(summary, /Recommended Approach/); assert.match(summary, /Target Outcome/);
+  assert.doesNotMatch(summary, /Budget|Timeline|INR|USD/);
+  const flow = render("architecture");
+  assert.ok(flow.includes(generatedResult.blueprint.architecture.overview));
+  assert.equal((flow.match(/class="studio-architecture-node"/g) ?? []).length, generatedResult.blueprint.architecture.dataFlow.length);
+});
+
+test("Studio technology groups use only supplied roles and retain ambiguous recommendations", async () => {
+  const { groupTechnologies } = await import("../../src/components/discovery/studio-content");
+  const roles = ["Web interface", "Data storage", "AI inference", "Hosting infrastructure", "Access control", "Unspecified capability"];
+  const stack = roles.map(component => ({ ...result.blueprint.techStack[0], component }));
+  const groups = groupTechnologies(stack);
+  assert.deepEqual(groups.map(group => group.title), ["Application", "Data", "AI / ML", "Infrastructure", "Security", "Other recommendations"]);
+  assert.deepEqual(groups.flatMap(group => group.items), stack);
+  assert.deepEqual(stack.map(item => item.component), roles);
+});
+
+test("five executive sections cover the ten original export sections without mutating their data", async () => {
+  const { studioSections } = await import("../../src/components/discovery/studio-content");
+  const { blueprintSections } = await import("../../src/lib/blueprint/presentation");
+  assert.deepEqual(studioSections.map(section => section.title), ["Overview", "Proposed Solution", "Technical Architecture", "Implementation Plan", "Business Outcomes"]);
+  assert.deepEqual(studioSections.flatMap(section => [...section.items]), blueprintSections(generatedResult).map(section => section.id));
+  const before = JSON.stringify(generatedResult);
+  for (const section of studioSections) assert.ok(render(section.id).length > 0);
+  assert.equal(JSON.stringify(generatedResult), before);
+});
+
+test("safe report Markdown supports formatting and lists while leaving HTML and unsafe links inert", async () => {
+  const { ReportText, CompactText } = await import("../../src/components/discovery/studio-text");
+  const text = '**Important** with `code` and *emphasis*\n\n- First item\n- Second item\n\n<script>alert(1)</script> [link](javascript:alert(1))';
+  const markup = renderToStaticMarkup(createElement(ReportText, { text }));
+  assert.match(markup, /<strong>Important<\/strong>/); assert.match(markup, /<code>code<\/code>/); assert.match(markup, /<em>emphasis<\/em>/); assert.match(markup, /<ul>/);
+  assert.doesNotMatch(markup, /<script|<a\s|dangerouslySetInnerHTML/);
+  assert.match(markup, /&lt;script&gt;/);
+  const long = 'An original recommendation that must remain available in full. '.repeat(10);
+  const disclosure = renderToStaticMarkup(createElement(CompactText, { text: long }));
+  assert.ok(disclosure.includes(long)); assert.match(disclosure, /<details/); assert.match(disclosure, /…/);
+});
+
+test("KPI emphasis uses explicit numbers only and preserves complete long targets and missing-value labels", async () => {
+  const { numericTarget } = await import("../../src/components/discovery/studio-content");
+  assert.equal(numericTarget('Automate ≥60% of routine inquiries'), '≥60%');
+  assert.equal(numericTarget('First response <2 minutes'), '<2 minutes');
+  assert.equal(numericTarget('-10% annual variance'), '-10%');
+  assert.equal(numericTarget('10–15 days'), '10–15 days');
+  assert.equal(numericTarget('<script>alert(60)</script>'), null);
+  assert.equal(numericTarget('Automate 60% and respond in 2 minutes'), null);
+  assert.equal(numericTarget('Agree a target after a 2 week baseline'), null);
+  assert.equal(numericTarget('Needs clarification in 30 days'), null);
+  const long = 'Preserve every word of this user-stated goal; establish the measurement approach with the business before evaluating the proposed outcome. '.repeat(3);
+  const b = { ...generatedResult.blueprint, kpis: [{ ...generatedResult.blueprint.kpis[0], target: long, targetSource: 'user-provided' as const }, { ...generatedResult.blueprint.kpis[0], target: '' }] };
+  const markup = render('benefits', b);
+  assert.ok(markup.includes(long)); assert.match(markup, /Full target — exact wording/); assert.match(markup, /Needs clarification/); assert.match(markup, /Not provided/);
+  assert.doesNotMatch(markup, /font-serif|<progress/);
 });

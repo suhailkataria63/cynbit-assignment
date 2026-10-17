@@ -63,7 +63,7 @@ test('wizard validates, navigates, persists, and generates once; cached results 
   expect(calls).toBe(1);
   await expect(page.getByText('11 of 12 attempts remaining today')).toBeVisible();
   await expect(page.getByText('openai/gpt-oss-120b', { exact: true })).toBeVisible();
-  await page.locator('summary').filter({ hasText: 'Risks, assumptions & limitations' }).click();
+  await page.getByRole('heading', { name: 'Risks, assumptions & limitations', exact: true }).scrollIntoViewIfNeeded();
   await expect(page.getByText('Helpdesk integration details are unspecified.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Back to Questionnaire' }).click();
   await page.getByRole('button', { name: 'View saved blueprint', exact: true }).first().click();
@@ -137,20 +137,21 @@ test('structured sections and actual response metrics survive reload with no ext
   await expect(details).toContainText('1,234'); await expect(details).toContainText('567');
   await expect(details).toContainText('1,801'); await expect(details).toContainText('8.2 seconds');
   await expect(details).toContainText('Success');
-  await page.locator('summary').filter({ hasText: 'Risks, assumptions & limitations' }).click();
+  await page.getByRole('heading', { name: 'Risks, assumptions & limitations', exact: true }).scrollIntoViewIfNeeded();
   for (const name of ['Risks', 'Assumptions', 'Missing Information', 'Limitations']) {
     const group = page.getByRole('region', { name, exact: true });
     await expect(group.getByRole('heading', { name, exact: true })).toBeVisible();
     await expect(group.getByRole('list')).toBeVisible();
   }
-  await page.locator('summary').filter({ hasText: 'Benefits & measurable KPIs' }).click();
+  await page.getByRole('button', { name: 'Table view', exact: true }).click();
   const table = page.getByRole('table');
   for (const name of ['KPI', 'Current Baseline', 'Proposed Target', 'Measurement Method']) await expect(table.getByRole('columnheader', { name, exact: true })).toBeVisible();
   await expect(table).toContainText('Not provided'); await expect(table).toContainText('User-provided goal'); await expect(table).toContainText('AI recommendation');
-  await page.locator('summary').filter({ hasText: 'Technology stack' }).click();
-  const technology = page.locator('details').filter({ has: page.locator('summary').filter({ hasText: 'Technology stack' }) });
+  await page.getByRole('heading', { name: 'Technology stack', exact: true }).scrollIntoViewIfNeeded();
+  const technology = page.locator('#blueprint-technology');
   await expect(technology).toContainText('Next.js'); await expect(technology).toContainText('Justification');
-  await page.locator('summary').filter({ hasText: 'Phased implementation roadmap' }).click();
+  await page.getByRole('heading', { name: 'Phased implementation roadmap', exact: true }).scrollIntoViewIfNeeded();
+  await page.locator('.studio-phase summary').first().click();
   await expect(page.getByRole('heading', { name: 'Activities', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await page.reload(); await expect(details).toContainText('1,234');
@@ -167,7 +168,7 @@ test('legacy cached blueprints render missing metadata without regeneration or d
   await expect(page.getByRole('heading', { name: 'Your solution blueprint.' })).toBeVisible();
   const details = page.getByRole('region', { name: 'Generation Details' });
   await expect(details).toContainText('Unavailable'); await expect(details).toContainText('no recorded usage metadata');
-  await page.locator('summary').filter({ hasText: 'Benefits & measurable KPIs' }).click();
+  await page.getByRole('button', { name: 'Table view', exact: true }).click();
   await expect(page.getByRole('table')).toContainText('Not provided');
   await expect(page.getByRole('table')).toContainText('Source not recorded');
   await page.getByRole('button', { name: 'Back to Questionnaire' }).click();
@@ -244,7 +245,7 @@ test('timeline and currency budget align, persist, and serialize without changin
   await expect(page.getByText('USD 300,000–500,000', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Generate Blueprint', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Your solution blueprint.' })).toBeVisible();
-  await page.locator('summary').filter({ hasText: 'Benefits & measurable KPIs' }).click();
+  await page.getByRole('button', { name: 'Table view', exact: true }).click();
   const table = page.getByRole('table');
   await expect(table.getByRole('row').filter({ hasText: 'User-stated success criteria' })).toContainText(userTarget);
   await expect(table.getByRole('row').filter({ hasText: '40% reduction' })).toContainText('Needs clarification');

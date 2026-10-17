@@ -82,7 +82,7 @@ test('dark questionnaire stages and cached blueprint remain readable without cha
   await page.goto('/workspace');
   await expect(page.getByRole('heading', { name: 'Your solution blueprint.' })).toBeVisible();
   const saved = await page.evaluate(() => localStorage.getItem('cynbit.discovery.v3'));
-  await page.locator('summary').filter({ hasText: 'Benefits & measurable KPIs' }).click();
+  await page.getByRole('button', { name: 'Table view', exact: true }).click();
   await expect(page.getByRole('table')).toBeVisible();
   await expectContrast(page.getByRole('columnheader', { name: 'KPI', exact: true }));
   await expectContrast(page.getByRole('table').locator('td').first());
