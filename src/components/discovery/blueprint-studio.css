@@ -14,11 +14,12 @@
 .studio-collapse:hover svg { transform: scale(1.08); }
 .studio-mobile-nav { display: none; }
 .studio-section { min-width: 0; margin-bottom: 1.5rem; border: 1px solid var(--color-border); border-radius: 1.75rem; background: var(--color-surface); box-shadow: var(--shadow-card); overflow-wrap: anywhere; }
-.studio-section-heading { display: flex; align-items: baseline; gap: 0.75rem; border-bottom: 1px solid var(--color-border); padding: clamp(1rem, 2vw, 1.5rem); }
+.studio-section-heading { display: flex; align-items: baseline; gap: 0.75rem; border-bottom: 1px solid var(--color-border); border-radius: calc(1.75rem - 1px) calc(1.75rem - 1px) 0 0; padding: clamp(1rem, 2vw, 1.5rem); }
 .studio-section-heading h2 { font-size: clamp(2rem, 2.5vw, 2.25rem); line-height: 1.12; }
 .studio-section-number { flex-shrink: 0; font-size: 0.75rem; color: var(--color-accent); letter-spacing: 0.08em; }
 .studio-section-body { padding: clamp(1rem, 2vw, 1.5rem); color: var(--color-muted); font-size: 0.875rem; line-height: 1.65; overflow-wrap: break-word; }
-.studio-introduction { position: relative; isolation: isolate; background: radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--color-accent-soft) 80%, transparent), transparent 60%), var(--color-surface); }
+.studio-section-heading, .studio-introduction { background: radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--color-accent-soft) 80%, transparent), transparent 60%), var(--color-surface); }
+.studio-introduction { position: relative; isolation: isolate; }
 .studio-introduction::before { content: ""; position: absolute; inset: -1rem; z-index: -1; pointer-events: none; border-radius: inherit; background: radial-gradient(ellipse at 85% 20%, color-mix(in srgb, var(--color-accent) 7%, transparent), transparent 70%); }
 .studio-info-panel, .studio-kpi, .studio-phase { min-width: 0; border: 1px solid var(--color-border); border-radius: 1.25rem; background: color-mix(in srgb, var(--color-background) 55%, var(--color-surface)); }
 .studio-info-panel, .studio-kpi { padding: 1rem; }
@@ -125,7 +126,8 @@
 .studio-architecture-connector { position: absolute; bottom: -2.25rem; left: 50%; width: 1.5rem; height: 2.25rem; transform: translateX(-50%); pointer-events: none; color: var(--color-accent); opacity: 0.65; }
 .studio-architecture-connector svg { width: 100%; height: 100%; }
 .studio-architecture-arrow-across { display: none; }
-.studio-architecture-node-details { height: 14rem; overflow-y: auto; scrollbar-width: thin; scrollbar-gutter: stable; border: 1px solid var(--color-border); border-left: 2px solid color-mix(in srgb, var(--color-accent) 60%, var(--color-border)); border-radius: 1rem; padding: 1rem; background: var(--color-background); font-size: 0.8125rem; overflow-wrap: anywhere; }
+.studio-architecture-node-details { min-width: 0; border: 1px solid var(--color-border); border-left: 2px solid color-mix(in srgb, var(--color-accent) 60%, var(--color-border)); border-radius: 1rem; padding: 1rem; background: var(--color-background); font-size: 0.8125rem; overflow-wrap: anywhere; }
+.studio-architecture-node-details .studio-card-heading { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 .studio-architecture-technical-details { display: grid; gap: 1rem; margin-top: 1rem; border-top: 1px solid var(--color-border); padding-top: 1rem; }
 .studio-architecture-full-description { min-width: 0; border: 1px solid var(--color-border); border-radius: 0.85rem; }
 .studio-architecture-full-description button > svg { transition: transform 240ms var(--ease-gentle); }
@@ -142,3 +144,8 @@
     .studio-architecture-connector:not([data-direction="down"]) .studio-architecture-arrow-across { display: block; }
   }
 }
+
+.studio-architecture-step-fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem 1.5rem; }
+.studio-architecture-step-fields > div { min-width: 0; }
+.studio-architecture-step-fields > div:only-child { grid-column: 1 / -1; }
+@media (min-width: 640px) { .studio-architecture-step-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

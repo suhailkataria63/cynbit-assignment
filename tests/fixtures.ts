@@ -31,6 +31,14 @@ export const generatedResult: BlueprintResult = {
   ...result,
   metadata: { ...result.metadata, usage: { inputTokens: 1234, outputTokens: 567, totalTokens: 1801, durationMs: 8200, requestedAt: "2026-10-17T11:59:51.800Z", status: "success" } },
   blueprint: { ...result.blueprint,
+    architecture: { ...result.blueprint.architecture, stepDetails: [{
+      title: "Prepare a reviewed support draft",
+      purpose: "Support agents answering repeated delivery questions using permitted help content.",
+      input: "An agent question and permitted help content.",
+      process: "Search the permitted content and prepare a draft for agent review.",
+      output: "A draft for an agent to review before replying.",
+      technology: [],
+    }] },
     roadmap: result.blueprint.roadmap.map(phase => ({ ...phase, activities: ["Interview support agents and audit content."] })),
     kpis: [
       { ...result.blueprint.kpis[0], baseline: null, targetSource: "unspecified" },

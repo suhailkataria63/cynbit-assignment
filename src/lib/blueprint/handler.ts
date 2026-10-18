@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { normalizeAnswers, questionnaireSchema } from "../discovery/questionnaire";
 import { generationBlueprintSchema, MAX_INPUT_BYTES, MAX_OUTPUT_BYTES, type BlueprintResult, type GenerationDetails } from "./schema";
-import { generationFailureLog } from "./diagnostics";
+import { generationFailureLog, logDevelopmentOutputFailure, schemaIssueDiagnostics, type OutputDiagnostics } from "./diagnostics";
 import { groundKpis } from "./grounding";
 import { unavailableTokens } from "./usage";
 import { models, BlueprintError, createGenerator, providerConfig, TIMEOUT_MS, type Generate, type ProviderConfig } from "./providers";
@@ -50,6 +50,7 @@ export function createBlueprintHandler({ generate = createGenerator(), getConfig
   const pending = new Set<string>();
   return async function POST(request: Request): Promise<Response> {
     let details: GenerationDetails | undefined;
+    const diagnostic: OutputDiagnostics = { stage: "provider_response", jsonParsing: "not_attempted" };
     let started = 0;
     try {
       const origin = request.headers.get("origin");
@@ -85,12 +86,21 @@ export function createBlueprintHandler({ generate = createGenerator(), getConfig
           }),
         ]);
         details.usage = { ...details.usage, ...response.usage };
+        diagnostic.completion = response.completion;
         const raw = response.text;
-        if (Buffer.byteLength(raw, "utf8") > MAX_OUTPUT_BYTES) throw new BlueprintError(502, "The provider response exceeded the output limit. No automatic retry was made.");
+        diagnostic.stage = "output_size";
+        diagnostic.responseBytes = Buffer.byteLength(raw, "utf8");
+        if (diagnostic.responseBytes > MAX_OUTPUT_BYTES) throw new BlueprintError(502, "The provider response exceeded the output limit. No automatic retry was made.");
         let json: unknown;
-        try { json = JSON.parse(raw); } catch { throw new BlueprintError(502, "The provider did not return a complete JSON blueprint. No automatic retry was made."); }
+        diagnostic.stage = "json_parse";
+        try { json = JSON.parse(raw); diagnostic.jsonParsing = "succeeded"; } catch { diagnostic.jsonParsing = "failed"; throw new BlueprintError(502, "The provider did not return a complete JSON blueprint. No automatic retry was made."); }
+        diagnostic.stage = "schema_validation";
         const parsed = generationBlueprintSchema.safeParse(json);
-        if (!parsed.success) throw new BlueprintError(502, "The provider returned an invalid or incomplete blueprint. No automatic retry was made.");
+        if (!parsed.success) {
+          if (process.env.NODE_ENV === "development") { diagnostic.schemaIssues = schemaIssueDiagnostics(parsed.error.issues); diagnostic.schemaIssueCount = parsed.error.issues.length; }
+          throw new BlueprintError(502, "The provider returned an invalid or incomplete blueprint. No automatic retry was made.");
+        }
+        diagnostic.stage = "post_validation";
         details.usage.durationMs = Math.max(0, Math.round(performance.now() - started));
         details.usage.status = "success";
         const generatedAt = new Date(now()).toISOString();
@@ -111,6 +121,8 @@ export function createBlueprintHandler({ generate = createGenerator(), getConfig
         if (error instanceof BlueprintError && error.usage) details.usage = { ...details.usage, ...error.usage };
         details.usage.durationMs = Math.max(0, Math.round(performance.now() - started));
         details.usage.status = "failure";
+        if (error instanceof BlueprintError && error.completion) diagnostic.completion = error.completion;
+        logDevelopmentOutputFailure(details, diagnostic);
         console.error("blueprint_generation_failed", generationFailureLog(error, details));
       }
       const status = error instanceof BlueprintError ? error.status : typeof error === "object" && error && "status" in error ? Number(error.status) : 0;

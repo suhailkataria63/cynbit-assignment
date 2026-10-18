@@ -1,13 +1,14 @@
 import { test, expect, type Page } from "@playwright/test";
+import type { Blueprint } from "../../src/lib/blueprint/schema";
 import { answers, generatedResult } from "../fixtures";
 
-async function seed(page: Page, theme = "light", dataFlow = generatedResult.blueprint.architecture.dataFlow) {
+async function seed(page: Page, theme = "light", dataFlow = generatedResult.blueprint.architecture.dataFlow, stepDetails?: Blueprint["architecture"]["stepDetails"]) {
   let calls = 0;
   await page.route('**/api/blueprint', async route => { calls++; await route.abort(); });
-  const result = { ...generatedResult, blueprint: { ...generatedResult.blueprint, architecture: { ...generatedResult.blueprint.architecture, dataFlow } } };
+  const result = { ...generatedResult, blueprint: { ...generatedResult.blueprint, architecture: { overview: generatedResult.blueprint.architecture.overview, dataFlow, ...(stepDetails ? { stepDetails } : {}) } } };
   await page.addInitScript(({ result, answers, theme }) => {
     localStorage.setItem('cynbit.theme', theme);
-    localStorage.setItem('cynbit.discovery.v3', JSON.stringify({ version: 3, id: crypto.randomUUID(), answers, step: 3, result, view: 'results' }));
+    if (!localStorage.getItem('cynbit.discovery.v3')) localStorage.setItem('cynbit.discovery.v3', JSON.stringify({ version: 3, id: crypto.randomUUID(), answers, step: 3, result, view: 'results' }));
   }, { result, answers, theme });
   await page.goto('/workspace');
   const section = page.locator('#blueprint-architecture');
@@ -27,15 +28,14 @@ for (const theme of ['light', 'dark']) {
     await expect(nodes).toHaveCount(steps.length);
     await expect(section.getByRole('button', { name: 'Business View', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(nodes.first()).toHaveAttribute('aria-pressed', 'true');
-    const panelHeight = (await section.locator('.studio-architecture-node-details').boundingBox())!.height;
     await nodes.nth(1).focus(); await page.keyboard.press('Enter');
     await expect(nodes.nth(1)).toHaveAttribute('aria-pressed', 'true');
-    expect((await section.locator('.studio-architecture-node-details').boundingBox())!.height).toBe(panelHeight);
+    expect(await section.locator('.studio-architecture-node-details').evaluate(el => el.clientHeight >= el.scrollHeight)).toBe(true);
     await expect(section.getByRole('region', { name: 'Selected flow step', exact: true })).toContainText(steps[1]);
     await section.getByRole('button', { name: 'Technical View', exact: true }).click();
     await expect(nodes.nth(1)).toHaveAttribute('aria-pressed', 'true');
     await expect(section.locator('.studio-architecture-diagram')).toHaveAttribute('data-view', 'technical');
-    await expect(section.getByRole('region', { name: 'Selected flow step', exact: true })).toContainText('Technical relationships need confirmation');
+    await expect(section.getByRole('region', { name: 'Selected flow step', exact: true }).locator('dl')).toHaveCount(1);
     await section.getByRole('button', { name: 'Business View', exact: true }).click();
     const disclosure = section.getByRole('button', { name: 'Show full architecture description', exact: true });
     await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
@@ -107,8 +107,77 @@ test('technical details use explicit saved technologies and reduced motion leave
   await expect(details).toContainText(technology.rationale);
   expect(await section.locator('.studio-architecture-connector path').evaluateAll(elements => elements.every(el => el.getAnimations().length === 0))).toBe(true);
   await section.locator('.studio-architecture-node').nth(1).focus(); await page.keyboard.press('Space');
-  await expect(details).toContainText('Technical relationships need confirmation');
+  await expect(details.locator('dl')).toHaveCount(0);
+  expect((await details.boundingBox())!.height).toBeLessThan(150);
   expect(await section.locator('.studio-architecture-node-details').evaluate(el => el.getAnimations({ subtree: true }).length)).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(calls()).toBe(0);
+});
+
+for (const theme of ['light', 'dark']) {
+  test(`structured step details show available explanations in a compact responsive grid in ${theme}`, async ({ page }) => {
+    const architecture = generatedResult.blueprint.architecture;
+    const step = architecture.stepDetails![0];
+    const supplied = [step, { ...step, title: 'Agent review', input: null, output: null, technology: [generatedResult.blueprint.techStack[0].technology] }];
+    const { section, calls } = await seed(page, theme, [...architecture.dataFlow, ...architecture.dataFlow], supplied);
+    const unchanged = await page.evaluate(() => localStorage.getItem('cynbit.discovery.v3'));
+    const panel = section.getByRole('region', { name: 'Selected flow step', exact: true });
+    await expect(panel.getByRole('heading')).toContainText(step.title);
+    await expect(panel.locator('dt').filter({ hasText: /^Purpose$/ })).toBeVisible();
+    for (const label of ['Input', 'Process', 'Output', 'Technology']) await expect(panel.locator('dt').filter({ hasText: new RegExp(`^${label}$`) })).toHaveCount(0);
+    await expect(section.locator('.studio-architecture-node-title').first()).toContainText(step.purpose);
+    await section.getByRole('button', { name: 'Technical View', exact: true }).click();
+    for (const label of ['Purpose', 'Input', 'Process', 'Output']) await expect(panel.locator('dt').filter({ hasText: new RegExp(`^${label}$`) })).toBeVisible();
+    for (const text of [step.purpose, step.input!, step.process, step.output!]) await expect(panel).toContainText(text);
+    const technicalText = await panel.innerText();
+    const technicalLabels = await section.locator('.studio-architecture-node-title').allTextContents();
+    await section.getByRole('button', { name: 'Business View', exact: true }).click();
+    await expect(panel).toContainText(step.purpose);
+    for (const label of ['Input', 'Process', 'Output', 'Technology']) await expect(panel.locator('dt').filter({ hasText: new RegExp(`^${label}$`) })).toHaveCount(0);
+    await expect(section.locator('.studio-architecture-node-title').first()).toContainText(step.purpose);
+    await section.getByRole('button', { name: 'Technical View', exact: true }).click();
+    expect(await panel.innerText()).toBe(technicalText);
+    expect(await section.locator('.studio-architecture-node-title').allTextContents()).toEqual(technicalLabels);
+    await expect(panel.locator('dt').filter({ hasText: /^Technology$/ })).toHaveCount(0);
+    await panel.screenshot({ path: test.info().outputPath(`step-details-${theme}.png`) });
+    await section.locator('.studio-architecture-node').nth(1).focus(); await page.keyboard.press('Enter');
+    await expect(panel.getByRole('heading')).toContainText(supplied[1].title);
+    for (const label of ['Input', 'Output']) await expect(panel.locator('dt').filter({ hasText: new RegExp(`^${label}$`) })).toHaveCount(0);
+    await expect(panel.locator('dt').filter({ hasText: /^Technology$/ })).toBeVisible();
+    await section.getByRole('button', { name: 'Technical View', exact: true }).click();
+    await expect(panel).toContainText(generatedResult.blueprint.techStack[0].rationale);
+    for (const width of [1280, 820, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect.poll(() => panel.locator('.studio-architecture-step-fields').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(width >= 640 ? 2 : 1);
+      expect(await panel.evaluate(el => el.clientHeight >= el.scrollHeight)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+    await page.reload();
+    await expect(panel).toContainText(step.purpose);
+    expect(await page.evaluate(() => localStorage.getItem('cynbit.discovery.v3'))).toBe(unchanged);
+    expect(calls()).toBe(0);
+  });
+}
+
+test('different architecture granularities preserve all structured nodes and original summaries without regeneration', async ({ page }) => {
+  const architecture = generatedResult.blueprint.architecture;
+  const step = architecture.stepDetails![0];
+  const records = [step, { ...step, title: 'Review' }, { ...step, title: 'Details'.repeat(30), purpose: 'Check.', process: 'Review.' }];
+  const { section, calls } = await seed(page, 'dark', architecture.dataFlow, records);
+  const nodes = section.locator('.studio-architecture-node');
+  await expect(nodes).toHaveCount(records.length);
+  await nodes.nth(2).focus(); await page.keyboard.press('Enter');
+  const panel = section.getByRole('region', { name: 'Selected flow step', exact: true });
+  await expect(panel).toContainText(records[2].title);
+  await expect(panel).toContainText(records[2].purpose);
+  await expect(panel.locator('dt').filter({ hasText: /^Process$/ })).toHaveCount(0);
+  await section.getByRole('button', { name: 'Technical View', exact: true }).click();
+  await expect(panel).toContainText(records[2].process);
+  await section.getByRole('button', { name: 'Show full architecture description', exact: true }).click();
+  expect(await section.locator('.studio-architecture-description-content ol > li').allTextContents()).toEqual(architecture.dataFlow);
+  for (const width of [1280, 820, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
   expect(calls()).toBe(0);
 });

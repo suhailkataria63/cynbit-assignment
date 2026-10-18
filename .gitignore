@@ -23,6 +23,14 @@
 # misc
 .DS_Store
 *.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+
+# Local business-data exports and scratch artifacts
+cynbit-blueprint*.json
+/local-artifacts/
 
 # debug
 npm-debug.log*
@@ -30,7 +38,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# Keep credentials local; only the blank configuration template is public.
 .env*
 !.env.example
 .env.local

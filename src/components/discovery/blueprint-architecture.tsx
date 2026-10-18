@@ -27,9 +27,10 @@ export function BlueprintArchitecture({ architecture, stack }: { architecture: B
   const id = useId();
   const nodes = architectureNodes(architecture, stack);
   const node = nodes[selected] ?? nodes[0];
+  const visibleFields = node?.details.fields.filter(field => view === "technical" || field.label === "Purpose" || field.label === "Original step") ?? [];
   return <div className="studio-architecture-report">
     <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><p className="studio-secondary">Explore the proposed workflow</p><div className="studio-architecture-view-toggle" role="group" aria-label="Architecture view">{(["business", "technical"] as const).map(value => <Button key={value} size="sm" variant={view === value ? "secondary" : "ghost"} className="min-h-10 px-3 text-xs" aria-pressed={view === value} onClick={() => setView(value)}>{value === "business" ? "Business View" : "Technical View"}</Button>)}</div></div>
-    <p className="mb-4 studio-secondary">{view === "business" ? "Concise excerpts from the proposed workflow. Select a step to read its full explanation." : "Saved flow descriptions and explicitly named technologies. Select a component to inspect the supplied details."}</p>
+    <p className="mb-4 studio-secondary">{view === "business" ? "Focus on each step’s purpose. Switch to Technical View for inputs, processing, outputs and technologies." : "Saved flow descriptions and explicitly named technologies. Select a component to inspect the supplied details."}</p>
     <div className="studio-architecture-diagram" data-view={view}>
       {nodes.length ? <ol className="studio-architecture-grid" aria-label="Architecture flow in saved order">{nodes.map((item, index) => {
         const row = Math.floor(index / 3);
@@ -46,10 +47,10 @@ export function BlueprintArchitecture({ architecture, stack }: { architecture: B
       })}</ol> : <p className="studio-secondary">No individual flow steps were provided. The original architecture description is available below.</p>}
     </div>
     {nodes.length > 0 && <p className="mt-3 studio-secondary">Arrows show the saved step order, not independently verified system dependencies.</p>}
-    {node && <div id={`${id}-node-details`} className="studio-architecture-node-details mt-4" role="region" aria-label="Selected flow step" aria-live="polite" aria-atomic="true" tabIndex={0}><motion.div key={`${view}-${node.index}`} initial={false} animate={reduced ? undefined : { opacity: [0.6, 1] }} transition={{ duration: 0.2 }}>
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h4 className="studio-card-heading">Step {node.index + 1} details</h4><span className="studio-source">{node.category}</span></div>
-      <ReportText text={node.description} />
-      {view === "technical" && (node.technologies.length ? <dl className="studio-architecture-technical-details">{node.technologies.map((item, index) => <div key={index}><dt className="font-semibold text-foreground"><InlineText text={item.technology} /></dt><dd className="mt-1"><span className="font-medium text-foreground">Purpose: </span><InlineText text={item.component} /></dd><dd className="mt-2"><span className="font-medium text-foreground">Technical considerations: </span><InlineText text={item.rationale} /></dd></div>)}</dl> : <p className="mt-3 studio-secondary">No technology recommendation is explicitly named in this step. Technical relationships need confirmation.</p>)}
+    {node && <div id={`${id}-node-details`} className="studio-architecture-node-details mt-4" role="region" aria-label="Selected flow step" aria-live="polite" aria-atomic="true"><motion.div key={`${view}-${node.index}`} initial={false} animate={reduced ? undefined : { opacity: [0.6, 1] }} transition={{ duration: 0.2 }}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h4 className="studio-card-heading"><span className="studio-label mr-2 text-accent">Step {node.index + 1}</span>{node.details.title ? <InlineText text={node.details.title} /> : "Details"}</h4><span className="studio-source">{node.category}</span></div>
+      {visibleFields.length > 0 && <dl className="studio-architecture-step-fields">{visibleFields.map(field => <div key={field.label}><dt className="studio-label mb-1 text-muted">{field.label}</dt><dd><ReportText text={field.value} /></dd></div>)}</dl>}
+      {view === "technical" && node.technologies.length > 0 && <dl className="studio-architecture-technical-details">{node.technologies.map((item, index) => <div key={index}><dt className="font-semibold text-foreground"><InlineText text={item.technology} /></dt><dd className="mt-1"><span className="font-medium text-foreground">Role: </span><InlineText text={item.component} /></dd><dd className="mt-2"><span className="font-medium text-foreground">Technical considerations: </span><InlineText text={item.rationale} /></dd></div>)}</dl>}
     </motion.div></div>}
     <div className="studio-architecture-full-description mt-4">
       <Button variant="ghost" className="w-full justify-between px-4 text-left text-sm text-accent" aria-expanded={expanded} aria-controls={`${id}-description`} onClick={() => setExpanded(value => !value)}><span>Show full architecture description</span><ChevronDown className={expanded ? "rotate-180" : ""} aria-hidden="true" /></Button>

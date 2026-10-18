@@ -52,7 +52,7 @@ test("timeout aborts provider, malformed/truncated/oversized JSON fails output v
   let aborted = false;
   const slow = createBlueprintHandler({ getConfig: () => config, timeoutMs: 5, generate: async (_a, _c, signal) => { signal.addEventListener("abort", () => { aborted = true; }); return new Promise(() => {}); } });
   assert.equal((await slow(request())).status, 504); assert.equal(aborted, true);
-  for (const raw of ['{"executiveSummary":', "x".repeat(65537), JSON.stringify({ ...result.blueprint, techStack: [] })]) {
+  for (const raw of ['{"executiveSummary":', "x".repeat(65537), JSON.stringify({ ...result.blueprint, architecture: { ...result.blueprint.architecture, dataFlow: [] } })]) {
     const handler = createBlueprintHandler({ getConfig: () => config, generate: async () => ({ text: raw, usage: { inputTokens: null, outputTokens: null, totalTokens: null } }) });
     assert.equal((await handler(request())).status, 502);
   }

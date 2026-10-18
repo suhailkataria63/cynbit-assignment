@@ -48,7 +48,9 @@ test('theme toggles with animated icons, persists on refresh and workspace navig
   const start = await ring.evaluate(el => getComputedStyle(el).transform);
   await expect.poll(() => ring.evaluate(el => getComputedStyle(el).transform)).not.toBe(start);
   const preview = page.locator('.preview-card');
-  await preview.scrollIntoViewIfNeeded();
+  // Native scrolling does not wait for the intentionally floating card to stabilize.
+  await preview.evaluate(el => el.scrollIntoView({ behavior: 'instant', block: 'center' }));
+  await expect(preview).toBeInViewport();
   await expect(preview).toHaveCSS('background-color', 'rgb(29, 41, 47)');
   await expectContrast(preview);
   await page.reload();
