@@ -1,8 +1,19 @@
 # Cynbit AI Solutions Architect
 
-An AI-powered business discovery and solution-planning proof of concept, prepared for an **AI/ML Engineer Internship assessment**. Cynbit turns a guided business questionnaire into a structured, reviewable solution blueprint—not an implemented business system.
+An AI-powered business discovery and solution-planning proof of concept developed for an AI/ML Engineer Internship assessment.
 
-**Live deployment:** Pending — replace this placeholder with the public HTTPS URL after deployment.
+**Live Demo:** https://cynbit-ai.vercel.app/
+
+**GitHub Repository:** https://github.com/suhailkataria63/cynbit-assignment
+
+## Quick Start
+
+1. Open the [live demo](https://cynbit-ai.vercel.app/) and select **Start AI Discovery**.
+2. Complete the Business, Challenge, and Requirements stages using non-sensitive business information, then review your answers.
+3. Select **Generate Blueprint** once. Explore the five report sections, switch between Business and Technical architecture views, and review KPI targets and assumptions.
+4. Copy the report or export its JSON. Saved results can be revisited in the same browser without regenerating; use **New Discovery** to start again.
+
+The public demo is intended for assessment use. Generation availability depends on provider quotas, the application's testing limits, and serverless runtime behavior. If generation fails, answers remain available for an explicit later attempt; there are no automatic retries.
 
 ## Overview and business opportunity
 
@@ -77,7 +88,7 @@ The server verifies completion, parses JSON, validates required structure, and a
 ### Repository map
 
 ```text
-docs/                                  Assessment reports (PDF)
+reports/                              Finalized assessment reports (PDF)
 src/app/                              Homepage, workspace, global styles
 src/app/api/blueprint/route.ts         Node.js API entry point
 src/components/discovery/             Questionnaire and Blueprint Studio UI
@@ -165,12 +176,12 @@ The assessment records the following **single successful Groq request**:
 
 These are the supplied results of **one successful request**, not benchmark averages, latency guarantees, or a multi-run evaluation. This request was not repeated during the documentation review. The application records token counts from provider response metadata without estimating missing counts; its generation duration is measured server-side and is not total browser-perceived latency. Browser attempt tracking is separate from provider usage. The application does not know an authoritative remaining provider quota or actual monetary charges.
 
-## Assessment reports
+## Assessment Reports
 
-- [AI Opportunity Report](docs/ai-opportunity-report.pdf)
-- [Technical Approach Report](docs/technical-approach-report.pdf)
+- [AI Opportunity Report](reports/ai-opportunity-report.pdf)
+- [Technical Approach Report](reports/technical-approach-report.pdf)
 
-These are unchanged copies of the supplied PDFs in `reports/`. This README describes the current implementation; proposed capabilities in the reports should not be interpreted as already implemented integrations.
+The finalized reports are retained without content changes. This README describes the current implementation; proposed capabilities in the reports should not be interpreted as already implemented integrations.
 
 ## Security and usage controls
 
