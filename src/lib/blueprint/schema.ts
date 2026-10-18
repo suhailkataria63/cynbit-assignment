@@ -1,27 +1,42 @@
 import { z } from "zod";
 
-const paragraph = z.string().trim().min(1).max(2000);
-const items = z.array(z.string().trim().min(1).max(600)).min(1).max(8);
-const roadmapPhase = z.strictObject({ phase: z.string().min(1).max(150), activities: items.optional(), deliverables: items, exitCriteria: z.string().min(1).max(600) });
-const kpi = z.strictObject({ metric: z.string().min(1).max(150), measurement: z.string().min(1).max(600), target: z.string().min(1).max(300), baseline: z.string().trim().min(1).max(300).nullable().optional(), targetSource: z.enum(["user-provided", "AI-proposed", "unspecified", "needs-clarification"]).optional() });
+// Structural validation stays strict: required objects/fields, types, nonblank
+// required text and the core architecture/roadmap. Length, style and suggested
+// list sizes belong to presentation; the overall response byte limit stays fixed.
+const text = z.string().trim().min(1);
+const items = z.array(text);
+const roadmapPhase = z.strictObject({ phase: text, activities: items.optional(), deliverables: items.min(1), exitCriteria: text });
+const kpi = z.strictObject({ metric: text, measurement: text, target: text, baseline: text.nullable().optional(), targetSource: z.enum(["user-provided", "AI-proposed", "unspecified", "needs-clarification"]).optional() });
+const architectureStep = z.strictObject({
+  title: text,
+  purpose: text,
+  input: text.nullable(),
+  process: text,
+  output: text.nullable(),
+  technology: items,
+});
+const architectureFields = { overview: text, dataFlow: items.min(1) };
+const stepDetails = z.array(architectureStep);
 export const blueprintSchema = z.strictObject({
-  executiveSummary: paragraph,
-  userSuccessCriteria: z.string().trim().min(1).max(2000).optional(),
-  analysis: z.strictObject({ problem: paragraph, requirements: items }),
-  solution: z.strictObject({ proposal: paragraph, justification: paragraph }),
-  feasibility: z.strictObject({ recommendation: z.enum(["AI-assisted", "Non-AI", "Further discovery needed"]), rationale: paragraph, dataReadiness: paragraph }),
-  techStack: z.array(z.strictObject({ component: z.string().min(1).max(150), technology: z.string().min(1).max(150), rationale: z.string().min(1).max(600) })).min(1).max(8),
-  architecture: z.strictObject({ overview: paragraph, dataFlow: items }),
-  roadmap: z.array(roadmapPhase).min(1).max(5),
+  executiveSummary: text,
+  userSuccessCriteria: text.optional(),
+  analysis: z.strictObject({ problem: text, requirements: items }),
+  solution: z.strictObject({ proposal: text, justification: text }),
+  feasibility: z.strictObject({ recommendation: z.enum(["AI-assisted", "Non-AI", "Further discovery needed"]), rationale: text, dataReadiness: text }),
+  techStack: z.array(z.strictObject({ component: text, technology: text, rationale: text })),
+  architecture: z.strictObject({ ...architectureFields, stepDetails: stepDetails.optional() }),
+  roadmap: z.array(roadmapPhase).min(1),
   risks: items, assumptions: items, missingInformation: items, limitations: items,
   benefits: items,
-  kpis: z.array(kpi).min(1).max(6),
+  kpis: z.array(kpi),
   nextSteps: items,
 });
-// New generations require the extra structure; existing cache entries do not.
+// New generations require the extra fields; existing caches remain compatible.
+// Flow summaries and detailed steps can describe different levels of granularity.
 export const generationBlueprintSchema = blueprintSchema.omit({ userSuccessCriteria: true }).extend({
-  roadmap: z.array(roadmapPhase.extend({ activities: items })).min(1).max(5),
-  kpis: z.array(kpi.extend({ baseline: z.string().trim().min(1).max(300).nullable(), targetSource: z.enum(["user-provided", "AI-proposed", "unspecified", "needs-clarification"]) })).min(1).max(6),
+  architecture: z.strictObject({ ...architectureFields, stepDetails }),
+  roadmap: z.array(roadmapPhase.extend({ activities: items })).min(1),
+  kpis: z.array(kpi.extend({ baseline: text.nullable(), targetSource: z.enum(["user-provided", "AI-proposed", "unspecified", "needs-clarification"]) })),
 });
 const count = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable();
 export const tokenUsageSchema = z.strictObject({ inputTokens: count, outputTokens: count, totalTokens: count });
@@ -45,7 +60,7 @@ export const blueprintResultSchema = z.strictObject({ blueprint: blueprintSchema
 export type BlueprintResult = z.infer<typeof blueprintResultSchema>;
 
 // Use only common structured-output keywords at the provider boundary. Zod
-// enforces string/array size constraints again after the response arrives.
+// enforces required/nonblank content and core structure after the response arrives.
 function structuralSchema(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(structuralSchema);
   if (!value || typeof value !== "object") return value;

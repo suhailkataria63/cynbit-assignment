@@ -44,16 +44,15 @@ test('homepage CTA spotlight follows mouse, fades on leave, and remains clickabl
     expect(await overlay.evaluate(el => getComputedStyle(el).opacity)).toBe('0.5');
     expect(await card.evaluate(el => el.style.getPropertyValue('--mouse-x'))).toBe('');
   } else {
-    // Eliminate reveal/scroll settling as a coordinate source of flakiness.
+    // Hover waits for the existing reveal transform to settle before sampling coordinates.
     await expect.poll(() => card.evaluate(el => el.getBoundingClientRect().top >= 0)).toBeTruthy();
-    await card.dispatchEvent('pointerenter', { pointerType: 'mouse', clientX: 0, clientY: 0 });
     const bounds = (await card.boundingBox())!;
-    await page.mouse.move(bounds.x + bounds.width * 0.2, bounds.y + bounds.height * 0.3);
+    await card.hover({ position: { x: bounds.width * 0.2, y: bounds.height * 0.3 } });
     await expect(card).toHaveAttribute('data-spotlight-active', 'true');
     expect(await card.evaluate(el => parseFloat(el.style.getPropertyValue('--mouse-x')))).toBeCloseTo(20, 0);
     expect(await card.evaluate(el => parseFloat(el.style.getPropertyValue('--mouse-y')))).toBeCloseTo(30, 0);
     await expect.poll(() => overlay.evaluate(el => Number(getComputedStyle(el).opacity))).toBe(1);
-    await page.mouse.move(bounds.x + bounds.width * 0.8, bounds.y + bounds.height * 0.7);
+    await card.hover({ position: { x: bounds.width * 0.8, y: bounds.height * 0.7 } });
     expect(await card.evaluate(el => parseFloat(el.style.getPropertyValue('--mouse-x')))).toBeCloseTo(80, 0);
     await page.mouse.move(0, 0);
     await expect(card).toHaveAttribute('data-spotlight-active', 'false');

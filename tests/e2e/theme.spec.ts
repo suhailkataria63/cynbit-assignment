@@ -48,7 +48,9 @@ test('theme toggles with animated icons, persists on refresh and workspace navig
   const start = await ring.evaluate(el => getComputedStyle(el).transform);
   await expect.poll(() => ring.evaluate(el => getComputedStyle(el).transform)).not.toBe(start);
   const preview = page.locator('.preview-card');
-  await preview.scrollIntoViewIfNeeded();
+  // Native scrolling does not wait for the intentionally floating card to stabilize.
+  await preview.evaluate(el => el.scrollIntoView({ behavior: 'instant', block: 'center' }));
+  await expect(preview).toBeInViewport();
   await expect(preview).toHaveCSS('background-color', 'rgb(29, 41, 47)');
   await expectContrast(preview);
   await page.reload();
@@ -82,7 +84,7 @@ test('dark questionnaire stages and cached blueprint remain readable without cha
   await page.goto('/workspace');
   await expect(page.getByRole('heading', { name: 'Your solution blueprint.' })).toBeVisible();
   const saved = await page.evaluate(() => localStorage.getItem('cynbit.discovery.v3'));
-  await page.locator('summary').filter({ hasText: 'Benefits & measurable KPIs' }).click();
+  await page.getByRole('button', { name: 'Table view', exact: true }).click();
   await expect(page.getByRole('table')).toBeVisible();
   await expectContrast(page.getByRole('columnheader', { name: 'KPI', exact: true }));
   await expectContrast(page.getByRole('table').locator('td').first());
